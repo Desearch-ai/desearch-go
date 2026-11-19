@@ -4,10 +4,15 @@ A thin, standard-library-only HTTP client for the Desearch API. The operation
 catalog is generated from the pinned OpenAPI snapshot: 92 operations, with typed
 web search models and generic JSON, text and event-stream access.
 
-This is unreleased source. No module version has been published. The commands
-below run from a local checkout of the SDK source with **Go 1.27.4** and Python 3
-(for regeneration). The module path is `github.com/Desearch-ai/desearch-go` and
-the package name is `desearch`. There are no external Go dependencies;
+Install version `v0.1.0` with **Go 1.27.4**:
+
+```sh
+go get github.com/Desearch-ai/desearch-go@v0.1.0
+```
+
+The verification commands below run from a local checkout of the SDK source
+with Go 1.27.4 and Python 3 (for regeneration). The module path is
+`github.com/Desearch-ai/desearch-go` and the package name is `desearch`. There are no external Go dependencies;
 `go.sum` is empty.
 
 ```go
