@@ -236,6 +236,12 @@ func (c *Client) Call(ctx context.Context, op Operation, input Request) (*Respon
 	defer resp.Body.Close()
 	data, err := io.ReadAll(io.LimitReader(resp.Body, c.limit+1))
 	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return nil, context.Canceled
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			return nil, context.DeadlineExceeded
+		}
 		return nil, errors.New("desearch: cannot read response")
 	}
 	if int64(len(data)) > c.limit {

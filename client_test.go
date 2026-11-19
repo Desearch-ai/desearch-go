@@ -234,6 +234,83 @@ func TestCancellationAndDeadline(t *testing.T) {
 	}
 }
 
+func TestResponseBodyContext(t *testing.T) {
+	for _, deadline := range []bool{false, true} {
+		name := "canceled"
+		want := context.Canceled
+		if deadline {
+			name = "deadline"
+			want = context.DeadlineExceeded
+		}
+		t.Run(name, func(t *testing.T) {
+			key := canary(t)
+			release := make(chan struct{})
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				io.Copy(io.Discard, r.Body)
+				w.Header().Set("Content-Type", "application/json")
+				io.WriteString(w, `{"echo":"`+key)
+				w.(http.Flusher).Flush()
+				select {
+				case <-r.Context().Done():
+				case <-release:
+				}
+			}))
+			defer server.Close()
+			defer close(release)
+			headers := make(chan struct{})
+			transport := http.DefaultTransport.(*http.Transport).Clone()
+			defer transport.CloseIdleConnections()
+			client, err := NewClient(key, Config{BaseURL: server.URL, HTTPClient: &http.Client{
+				Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
+					response, err := transport.RoundTrip(r)
+					if err == nil {
+						close(headers)
+					}
+					return response, err
+				}),
+			}})
+			if err != nil {
+				t.Fatal(err)
+			}
+			ctx, cancel := context.WithCancel(context.Background())
+			if deadline {
+				cancel()
+				ctx, cancel = context.WithTimeout(context.Background(), time.Second)
+			}
+			defer cancel()
+			done := make(chan error, 1)
+			go func() {
+				response, err := client.Search(ctx, SearchRequest{Query: "test"})
+				if response != nil {
+					done <- errors.New("partial response was returned")
+					return
+				}
+				done <- err
+			}()
+			select {
+			case <-headers:
+				if ctx.Err() != nil {
+					t.Fatal("context expired before response headers were received")
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("response headers were not received")
+			}
+			if !deadline {
+				cancel()
+			}
+			select {
+			case err := <-done:
+				noLeak(t, key, err)
+				if !errors.Is(err, want) {
+					t.Fatal("body-read context sentinel was lost")
+				}
+			case <-time.After(3 * time.Second):
+				t.Fatal("body read did not stop after context completion")
+			}
+		})
+	}
+}
+
 func TestStreamAndInvalidMetadata(t *testing.T) {
 	key := canary(t)
 	client := testClient(t, key, func(w http.ResponseWriter, r *http.Request) {
