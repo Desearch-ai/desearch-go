@@ -1,0 +1,9 @@
+{
+  "url": "https://api.desearch.ai/openapi.json",
+  "fetched_at": "2026-11-19T15:10:58+00:00",
+  "sha256": "c3194dd801c58f2773e40e47711246debf42142cd95a34cf028f770f005f7807",
+  "attribution": {
+    "python": "https://github.com/Desearch-ai/desearch.py/tree/f03402dbf56cdca1cc2aa7f9939478d107cfe884",
+    "javascript": "https://github.com/Desearch-ai/desearch.js/tree/43b4b745fbb7eae8144135d9d718f15336321bf7"
+  }
+}
